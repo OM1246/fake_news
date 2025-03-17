@@ -19,7 +19,7 @@ except FileNotFoundError:
     st.stop()
 
 # News API key (replace with your own key from newsapi.org)
-NEWS_API_KEY = "aa4677cd806445f0bd07dd77b9bbe8df"  # Sign up at newsapi.org to get your key
+NEWS_API_KEY = " "  # Sign up at newsapi.org to get your key
 
 # Set page configuration
 st.set_page_config(
