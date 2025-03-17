@@ -2,6 +2,8 @@ import streamlit as st
 import joblib
 import numpy as np
 import re
+import pandas as pd
+import random
 import requests  # For making API calls to News API
 
 # Load the vectorizer and model with error handling
@@ -17,7 +19,7 @@ except FileNotFoundError:
     st.stop()
 
 # News API key (replace with your own key from newsapi.org)
-NEWS_API_KEY = " "  # Sign up at newsapi.org to get your key
+NEWS_API_KEY = "aa4677cd806445f0bd07dd77b9bbe8df"  # Sign up at newsapi.org to get your key
 
 # Set page configuration
 st.set_page_config(
@@ -26,6 +28,20 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# Add reset App functionality as Clear button
+def reset():
+    for key in st.session_state.keys():
+        del st.session_state[key]
+
+# Creating a container for the top right corner button
+top_right_container = st.container()
+with top_right_container:
+    # Using columns to push the button to the right
+    _, _, right_col = st.columns([6, 1, 1])
+    with right_col:
+        st.button("Clear", on_click=reset, key="clear_button")
+
 
 # Custom CSS to match the dark theme in the image
 st.markdown(
@@ -155,15 +171,29 @@ st.markdown(
 # Input and analysis section
 col1 = st.columns(1)[0]
 with col1:
+    # Initialize session state for the inputs if they don't exist
+    if 'article_text' not in st.session_state:
+        st.session_state.article_text = ""
+    if 'article_url' not in st.session_state:
+        st.session_state.article_url = ""
+    
     inputn = st.text_area(
         "Article Text",
+        value=st.session_state.article_text,
         placeholder="Paste your health news article here...",
         height=250,
+        key="text_area_input"
     )
     news_link = st.text_input(
         "News Link (Optional)",
+        value=st.session_state.article_url,
         placeholder="Paste the news article URL here (if available)...",
+        key="link_input"
     )
+    
+    # Store the current values in session state
+    st.session_state.article_text = inputn
+    st.session_state.article_url = news_link
 
     if st.button("Analyze Article"):
         if inputn.strip() or news_link.strip():
@@ -295,16 +325,31 @@ with col1:
                     unsafe_allow_html=True,
                 )
 
-                # Display related articles fetched from News API
-                st.markdown(
-                    '<div class="suggested-links">Suggested Related Articles:</div>',
-                    unsafe_allow_html=True,
-                )
-                for article in suggested_articles:
+                # Display random articles from true_new.csv
+                
+                try:
+                    # Load the dataset
+                    df = pd.read_csv("True_new.csv")
+                    
+                    # Select random articles (max 3)
+                    random_articles = df.sample(min(3, len(df))).to_dict('records')
+                    
                     st.markdown(
-                        f"- [{article['title']}]({article['url']})",
+                        '<div class="suggested-links">Suggested Related Articles:</div>',
                         unsafe_allow_html=True,
                     )
+                    
+                    for article in random_articles:
+                        # Assuming the dataset has 'title' and 'url' columns
+                        # Adjust column names if they're different in your dataset
+                        title = article.get('title', 'Related article')
+                        url = article.get('url', '#')
+                        st.markdown(
+                            f"- [{title}]({url})",
+                            unsafe_allow_html=True,
+                        )
+                except Exception as e:
+                    st.warning(f"Could not load related articles: {e}")
 
         else:
             st.markdown(
